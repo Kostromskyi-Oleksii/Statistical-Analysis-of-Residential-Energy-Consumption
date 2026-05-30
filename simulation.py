@@ -3,6 +3,7 @@ from config import *
 from load_model import generate_base_load
 
 def run_simulation():
+    np.random.seed(42)
     base_profile = generate_base_load()
 
     daily_energy = []

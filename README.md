@@ -1,98 +1,113 @@
 # Statistical Analysis of Residential Energy Consumption
 
 ## Overview
-This project presents a statistical and physics-based model of residential electrical energy consumption.  
-The goal is to analyze daily and long-term load behavior, peak power demand, and the probability of network overloads.
+This project presents a statistical and physics-based model of residential electrical energy consumption in a typical apartment.  
+The main purpose is to evaluate daily and long-term load behavior, peak power demand, and the probability of exceeding the circuit breaker rating.
 
-The project is designed as a pre-university Electrical Engineering study, focusing on energy systems analysis rather than software development.
+The project is designed as a pre-university level Electrical Engineering study, focusing on energy systems analysis rather than software development.
 
-## Motivation
-Electrical power systems must be designed not only for average consumption, but also for peak loads and variability in user behavior.  
-This project investigates how stochastic variations in daily usage affect:
-- total energy consumption
-- peak power demand
-- reliability of household electrical infrastructure
+## Goal and Objectives
 
-Such analysis is essential for power system planning, circuit protection selection, and energy efficiency optimization.
+**Goal**:  
+Model household electricity consumption with realistic daily variability and assess the risk of tripping the main 3500 W circuit breaker.
 
-## Model Description
-The model simulates a typical residential household with the following electrical appliances:
+**Objectives**:
+- Build a base hourly load profile from typical household appliances
+- Simulate daily consumption variations using Monte Carlo method
+- Calculate key metrics: daily energy, peak power, overload probability
+- Visualize results and provide practical recommendations for peak reduction
 
-| Appliance            | Power (W) | Usage Schedule                          |
-|----------------------|-----------|-----------------------------------------|
-| Lighting             | 10 (day)<br>50 (evening) | 50 W from 18:00 to 23:00<br>10 W otherwise |
-| Refrigerator         | 150       | Constant operation (24/7)                |
-| Washing Machine      | 2000      | Operates only at 19:00 (1 hour)          |
-| Personal Computer    | 300       | Operates from 16:00 to 22:00             |
+## Key Formulas
 
-A base hourly load profile (24 values in Watts) is created using realistic power ratings and usage schedules.  
-Daily variability is modeled via Monte Carlo simulation with multiplicative random variation ~ N(1.0, σ=0.15), representing ±15% fluctuations in overall consumption.
+- Hourly power at hour h:  
+  Pₕ = P_lighting(h) + P_fridge + P_washing(h) + P_computer(h)
 
-Key electrical relations used:  
-- Power: P = U × I (voltage assumed constant at 230 V)  
-- Energy: E = ∑(P × Δt) where Δt = 1 hour (energy in kWh = sum(P)/1000)
+- Daily variation:  
+  Pₕ,day = Pₕ × v,    where v ∼ 𝒩(1.0, 0.15)
 
-Maximum allowed power is set to **3500 W** (typical rating for a household circuit breaker in many apartments).
+- Daily energy consumption:  
+  E_day = (∑₂₄ Pₕ,day) / 1000     [kWh]
 
-## Simulation Approach
-- Time resolution: 1 hour  
-- Simulation duration: 60 days  
-- Random variation: normal distribution with mean 1.0 and standard deviation 0.15  
-- Overload event: peak power in a day > 3500 W  
+- Daily peak power:  
+  P_peak = max(Pₕ,day)
 
-The simulation calculates:  
-- Daily energy consumption (kWh)  
-- Daily peak power (W)  
-- Number of overload days
+- Overload condition: P_peak > 3500 W
 
-## Key Results
-Base (deterministic) profile:  
-- Daily energy consumption: **8.18 kWh**  
-- Peak power: **2500 W** (at 19:00 due to simultaneous operation of washing machine, computer, lighting, and refrigerator)
+- Overload probability = (number of overload days / 60) × 100%
 
-With stochastic variation (example run with 60 days, reproducible seed):  
-- Mean daily energy: **7.99 kWh**  
-- Minimum daily energy: **5.78 kWh**  
-- Maximum daily energy: **10.45 kWh**  
-- Mean peak power: **2442 W**  
-- Maximum observed peak power: **3194.6 W**  
-- Probability of overload (>3500 W): **0.0%** (0 overload days)
+## Appliances Model
 
-**Note**: Results may vary slightly between runs due to randomness, but overload probability typically remains very low (<5%) because the base peak (2500 W) is well below the 3500 W limit, and even with +30% variation (rare) it stays under the threshold.
+| Appliance            | Power (W)       | Schedule                                  |
+|----------------------|-----------------|-------------------------------------------|
+| Lighting             | 10 / 50         | 50 W from 18:00 to 23:00, otherwise 10 W  |
+| Refrigerator         | 150             | 24/7                                      |
+| Washing machine      | 2000            | only at 19:00 (1 hour)                    |
+| Personal computer    | 300             | 16:00 - 22:00                             |
 
-## Analysis and Conclusions
-- The household has comfortable margin below the 3500 W limit under modeled conditions.  
-- Peak demand occurs in the evening (19:00) due to coincidence of high-power appliances.  
-- Stochastic variation significantly affects total energy consumption (range ~5.8–10.5 kWh) but has limited impact on overload risk in this scenario.  
-- Recommendations:  
-  - Shift washing machine to off-peak hours (e.g., nighttime) to further reduce peak.  
-  - Replace lighting with LED (lower evening power) for energy savings.  
-  - Add more variable loads (e.g., electric kettle, microwave) for more realistic overload risk assessment.
-
-## Limitations
-- Hourly resolution (real consumption has minute-level spikes).  
-- Limited set of appliances (no seasonal loads like air conditioning or heating).  
-- Variation applied uniformly to all loads (in reality, appliances vary independently).  
-- No modeling of reactive power or power factor.
+Network voltage — 230 V  
+Main breaker rating — 3500 W
 
 ## Project Structure
-- `config.py` - Physical parameters and system assumptions  
-- `load_model.py` - Household load modeling  
-- `simulation.py` - Monte Carlo simulation  
-- `analysis.py` - Statistical analysis  
-- `visualization.py` - Result visualization (histogram of daily energy + peak power over time)  
-- `main.py` - Entry point
+
+- `config.py`          — constants and system parameters  
+- `load_model.py`      — base load profile generation  
+- `simulation.py`      — Monte Carlo simulation (60 days)  
+- `analysis.py`        — statistical calculations  
+- `visualization.py`   — plotting routines  
+- `main.py`            — main entry point
 
 ## How to Run
-1. Install required libraries:
+
 ```bash
 pip install numpy matplotlib
 python main.py
 ```
+The program displays:
 
-The program will print statistical results to console and display two plots:
+Base daily load profile (hourly)
+Histogram of daily energy consumption
+Daily peak power time series (with 3500 W limit line)
 
-Histogram of daily energy consumption distribution
-Daily peak power over the simulation period (with 3500 W limit line)
+Example Results (seed=42)
+Deterministic base profile
 
-Feel free to modify parameters in config.py to explore different scenarios!
+Daily energy: 8.18 kWh
+Peak power: 2500 W (at 19:00)
+
+After 60 days with ±15% variation
+
+Mean daily energy:      7.99 kWh
+Min / Max energy:       5.78 - 10.45 kWh
+Mean daily peak:        2442 W
+Maximum observed peak:  3194.6 W
+Overload days (>3500 W): 0
+Overload probability:   0.0 %
+
+## Conclusions
+
+Under current assumptions the household has a significant safety margin — overload probability is practically zero.
+The main evening peak (19:00) is caused by simultaneous operation of washing machine, computer, evening lighting and fridge.
+±15% daily variation strongly affects total energy use, but barely influences overload risk due to low base peak (2500 W).
+To make overloads more probable in the model one could: increase variation (σ=0.25-0.35), add high-power short-duration loads (kettle, oven, hairdryer), or reduce breaker limit to 3000-3200 W.
+
+## Practical recommendations:
+
+Move washing machine cycle to night hours (02:00-05:00)
+Replace incandescent/halogen bulbs with LED lighting
+Use smart plugs / timers to shift high-power loads away from evening peak
+Consider demand-side management when adding new high-power appliances (EV charger, heat pump, etc.)
+
+## Limitations
+
+Hourly resolution (real spikes are much shorter)
+Uniform variation coefficient applied to all loads
+No seasonal / weather-dependent loads (air conditioning, electric heating)
+No reactive power or power factor considered
+
+## References
+
+- Swan LG, Ugursal VI. Modeling of end-use energy consumption in the residential sector: A review of modeling techniques. Renewable and Sustainable Energy Reviews, 2009.
+- Grandjean A, et al. A review of domestic hot water consumption and its modeling. Energy and Buildings, 2016.
+- Gouveia JP, et al. Daily electricity consumption profiles for Portuguese households. Energy and Buildings, 2017.
+- Yohanis YG. Domestic seasonal variations of electricity consumption. Energy and Buildings, 2010.
+- Filippín C, et al. Household electricity consumption in Argentina. Energy for Sustainable Development, 2012.
